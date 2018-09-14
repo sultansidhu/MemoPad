@@ -6,64 +6,30 @@ import sqlite3
 # ---------CONSTANTS-----------
 connection_collection = []
 address_collection = []
-database_exists = False
+file = open("db_names.txt", "r")
+stuff = file.read()
+name_list = stuff.split("\n")
+name_list.remove("")
+# print(name_list)  [this print call was called as a checker]
+file.close()
+
+# ---------FILE MANAGEMENT ---------------
+
+
+def write_to_file(string, file_name):
+    """Writes string to file"""
+    thefile = open(file_name, "r")
+    stuff_in_file = thefile.read().split("\n")
+    thefile.close()
+    openedfile = open(file_name, "w")
+    for things in stuff_in_file:
+        openedfile.write(things)
+        openedfile.write("\n")
+    openedfile.write(string)
+    openedfile.close()
+
 
 # ----------SERVER SIDE FUNCTIONS-----------
-
-
-# def create_socket():
-#     """Creates a socket to establish connection between the server and client."""
-#     try:
-#         global host  # the host IP address
-#         global port  # the port over which connection will be done
-#         global sockett
-#
-#         host = ""
-#         port = 9999
-#         sockett = socket.socket()
-#
-#     except socket.error as msg:
-#         print("Error creating the socket. \nError: {}".format(str(msg)))
-#
-#
-# def bind_socket():
-#     """A function that binds the sockets and listens for connections."""
-#     try:
-#         global host
-#         global port
-#         global sockett
-#         # these globals need redeclaration because their values need to be accessed from within another function.
-#
-#         print("Binding the port: {}".format(port))
-#         sockett.bind((host, port))
-#         sockett.listen(10)
-#
-#     except socket.error as msg:
-#         print("Error occurred while binding the socket.\nError: {}  \nRETRYING...".format(str(msg)))
-#         bind_socket()
-#
-#
-# def accept_connections():
-#     """Accepts the connections that are attempting connection."""
-#     number = 9054512999
-#     for conn in connection_collection:
-#         conn.close()
-#
-#     del connection_collection[:]
-#     del address_collection[:]
-#
-#     while True:
-#         try:
-#             conn, address = sockett.accept()
-#             sockett.setblocking(1)
-#             # this prevents timeout.
-#
-#             connection_collection.append(conn)
-#             address_collection.append(address)
-#
-#             print("Connection has been established!  ||  {}".format(address[0]))
-#         except:
-#             print("Error accepting connections.")
 
 
 def listen_for_data():
@@ -83,37 +49,18 @@ def listen_for_data():
                 break
             credentials = thedata.decode("utf-8")
             return credentials
-    # while True:
-    #     data = sockett.recv(1024)
-    #     print(data)
-    #     if len(data) > 0:
-    #         credentials = data.decode("utf-8")
-    #         return credentials
+
 
 # ---------DATABASE FUNCTIONS-----------
 
 
-def check_db_status(existence_bool):  # TODO: THIS FUNCTION WOULD NOT ALTER THE EXISTENCE BOOL, ALTER THIS FUNCTION.
-    """Checks the existence of a database and connects to a pre-existing database,
-    or creates and connects to a new one."""
-    name = input("Please enter the name of the database you're connecting with? ").strip().lower()
-    if existence_bool:
-        try:
-            print("Attempting connection to pre-existing database...")
-            connect_to_db(name)
-            print("Connection secured!")
-        except:
-            print("Error connecting!")
-    else:
-        try:
-            print("Attempting to create and connect to new database...")
-            create_db(name)
-            print("Connection secured!")
-        except:
-            print("Error creating new database!")
+def display_all_db_names(db_names_list):
+    """Displays all the taken db names."""
+    for names in db_names_list:
+        print(names, end="\n")
 
 
-def create_db(name):  # MIGHT HAVE TO TAKE THIS OUT OF A FUNCTION AND MAKE IT A LOCALLY EXECUTED CODE BLOCK.
+def create_db(name):
     """Creates the database, if there doesn't exist one already. Returns a cursor object."""
     database_name = name + ".db"
     db_conn = sqlite3.connect(database_name)
@@ -121,7 +68,7 @@ def create_db(name):  # MIGHT HAVE TO TAKE THIS OUT OF A FUNCTION AND MAKE IT A 
     cursor.execute("""CREATE TABLE credential_database(
                         Name text, 
                         Username text, 
-                        Password text""")
+                        Password text)""")
     return cursor
 
 
@@ -135,47 +82,95 @@ def connect_to_db(name):
 
 def add_data(name, username, password, cursor_object):
     """Adds a newly registered user to the database."""
+    print("ADDING USER: " + username + "\n")
     cursor_object.execute("INSERT INTO credential_database VALUES(?, ?, ?)", (name, username, password))
 
 
 def check_credentials(given_username, given_password, cursor_object):
     """Checks if the username and password supplied are credible credentials."""
-    cursor_object.execute("SELECT * FROM credential_database WHERE username = (?);", (given_username))
-    credentials = cursor_object.fetchall()
-    for detail in credentials:
-        print(detail, end="\n")
-    # NEXT PART WOULD NEED SOME CORRECTIONS DEPENDING ON THE USER ENTERED DATA.
-    le_password = credentials[1]
-    if le_password == given_password:
-        return "True"
+    validity_bool = False
+    index = 0
+    cursor_object.execute("SELECT * FROM credential_database;")
+    obtained_data = cursor_object.fetchall()
+    for i in range(len(obtained_data)):
+        if given_username in obtained_data[i]:
+            validity_bool = True
+            index = i
+    # above code block will check if the username is present.
+    if validity_bool is False:
+        print("Please sign in as you are not registered in the database.")
     else:
-        return "False"
+        registered_password = obtained_data[index][2]
+        if registered_password == given_password:
+            return "True"
+        else:
+            print("Wrong credentials! Try again!")
+            return "False"
+
+
+def show_all_db_entries(cursor_obj):
+    """Shows all entries currently in the database."""
+    cursor_obj.execute("SELECT * FROM credential_database;")
+    x = cursor_obj.fetchall()
+    for y in x:
+        print(y, end="\n\n")
 
 
 def add_new_user(name, username, password, cursor_object):
-    """Adds a new user to the database, after checking if the user already exists."""
-    cursor_object.execute("SELECT * FROM credential_database WHERE username = (?);", (username))
-    data = cursor_object.fetchall()
-    if data is None:
-        print("Registration initiating...")
+    """Checks if the user is already in the database. If not, registers the new user."""
+    validity_bool = False
+    cursor_object.execute("SELECT * FROM credential_database;")
+    obtained_data = cursor_object.fetchall()
+    for i in range(len(obtained_data)):
+        if username in obtained_data[i]:
+            validity_bool = True
+    # above code block will check if the username is present.
+    if validity_bool is False:
         add_data(name, username, password, cursor_object)
     else:
-        print("User already exists in the database, login please!")
+        print("YOU ARE ALREADY REGISTERED. PLEASE TRY LOGGING IN.")
 
 
-def check_database(username, password, cursor_object):
-    """Checks the database to see if the entered username is already within the database."""
-    cursor_object.execute("SELECT * FROM credential_database WHERE username = (?);", (username))
-    data = cursor_object.fetchall()
-    if data is None:
-        name = input("Please enter your name? ").strip()
-        add_data(name, username, password, cursor_object)
-    else:
-        check_credentials(username, password, cursor_object)
+def delete_user(username, cursor_object):
+    """Deletes the user with the specified username from the database."""
+    print("DELETING USER: " + username)
+    # stringg = "DELETE FROM credential_database WHERE Username = " + username + ";"
+    cursor_object.execute("DELETE FROM credential_database WHERE Username = ?", (username,))
 
 
 if __name__ == "__main__":
-    creds = listen_for_data()
-    print(creds)
-    # response = check_user_creds(creds)
-    # send_back_response
+
+    # ------------ DATABASE ACTION STARTS NOW ----------------
+
+    print("SHOWING ALL TAKEN DATABASE NAMES...\n")
+    if len(name_list) < 1:
+        print("No databases currently exist.\n")
+
+    else:
+        display_all_db_names(name_list)
+    print("Which database do you wish to connect with? ")
+    given_database_name = input("It may be new or pre-existing. >>").lower().strip()
+    if given_database_name not in name_list:
+        write_to_file(given_database_name, "db_names.txt")
+        db_cursor = create_db(given_database_name)
+    else:
+        db_cursor = connect_to_db(given_database_name)
+
+# ----------- DATABASE MAIN CONTROLLER METHOD WAS PARSED ABOVE --------------
+
+    add_new_user("sultan", "sultan123", "sidhuismypw", db_cursor)
+    add_new_user("abhishek", "abhi123", "kapoorishispw", db_cursor)
+    add_new_user("yosef", "yosef123", "leibmanishispw", db_cursor)
+
+    show_all_db_entries(db_cursor)
+
+    # now some defective calls
+
+    add_new_user("sultan", "sultan123", "sidhuismypw", db_cursor)
+
+    x = check_credentials("yosef123", "leibmanishispw", db_cursor)
+    print(x)
+    y = check_credentials("sultan123", "isabitch", db_cursor)
+    print(y)
+    delete_user("yosef123", db_cursor)
+    show_all_db_entries(db_cursor)
