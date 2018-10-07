@@ -13,7 +13,7 @@ name_list.remove("")
 # print(name_list)  [this print call was called as a checker]
 file.close()
 
-# ---------FILE MANAGEMENT ---------------
+# --------- FILE MANAGEMENT ---------------
 
 
 def write_to_file(string, file_name):
@@ -42,7 +42,7 @@ def listen_for_data():
     sockett.listen(5)
     conn, addr = sockett.accept()
     with conn:
-        print("YA WE CONNNECTED BITCH: {}".format(addr[0]))
+        print("We are now connected: {}".format(addr[0]))
         while True:
             thedata = conn.recv(1024)
             if not thedata:
@@ -142,6 +142,8 @@ if __name__ == "__main__":
 
     # ------------ DATABASE ACTION STARTS NOW ----------------
 
+    print("============== NETWORK STUFF ==============\n")
+
     print("SHOWING ALL TAKEN DATABASE NAMES...\n")
     if len(name_list) < 1:
         print("No databases currently exist.\n")
@@ -161,6 +163,9 @@ if __name__ == "__main__":
     add_new_user("sultan", "sultan123", "sidhuismypw", db_cursor)
     add_new_user("abhishek", "abhi123", "kapoorishispw", db_cursor)
     add_new_user("yosef", "yosef123", "leibmanishispw", db_cursor)
+    add_new_user("tejbir", "tejbir123", "bhullarishispw", db_cursor)
+    add_new_user("jun", "jun123", "junweiwong", db_cursor)
+    add_new_user("utkarsh", "utkarsh123", "kickhimoutofuoft", db_cursor)
 
     show_all_db_entries(db_cursor)
 
@@ -173,4 +178,13 @@ if __name__ == "__main__":
     y = check_credentials("sultan123", "isabitch", db_cursor)
     print(y)
     delete_user("yosef123", db_cursor)
+    add_new_user("yosef", "yosef123", "leibmanishispw", db_cursor)
+
+    print("################# COMPLETE DATABASE BELOW ##################")
     show_all_db_entries(db_cursor)
+
+
+# ------------ Sending queries back --------------
+
+    query = check_credentials("yosef", "leibmanishispw", db_cursor)
+    print(query)
